@@ -1,10 +1,6 @@
 # ==============================================================================
-# Scenario 1b: Minimum-feasible policy solution
-#   = S1, but at 1.3x the WTP budget, CN limited to 30% (floor only),
-#     and the CORRECTED 2030 LULUCF carbon floor.
-# Purpose: the smallest budget at which BOTH the 30% protection target and the
-#          corrected 2030 carbon target can be met simultaneously. Supported by
-#          the budget sweep (target reached ~1.25-1.3x current spend).
+# Scenario 2: Minimum-feasible policy solution
+#   = S1, but at 1.3x the WTP budget, CN limited to 30% (floor only), and the 2030 LULUCF carbon floor.
 # Author: Tijmen Hennekes
 # ==============================================================================
 cat("Initializing scenario 1b (minimum-feasible) environment...\n")
