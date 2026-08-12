@@ -15,7 +15,7 @@ cost_stack <- c(
   terra::rast("C:/Users/Tijme/OneDrive/Msc ERM/Thesis work/00 Prioritizr data/02_processed_data/cost_mf.tif")
 )
 names(cost_stack) <- zone_names
-# EULOCC1K cost is EUR/ha/yr; x cell area -> EUR/cell in EUR million. Uniform rescale.
+# Opportunity cost is EUR/ha/yr; x cell area -> EUR/cell in EUR million. Uniform rescale.
 cost_stack <- cost_stack * terra::cellSize(cost_stack[[1]], unit = "ha") / 1e6
 ifm_cost_factor <- 0.25
 cost_stack[["Integrated"]] <- ifm_cost_factor * cost_stack[["Close_to_Nature"]]
