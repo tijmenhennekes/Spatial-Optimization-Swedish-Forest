@@ -2,7 +2,6 @@
 # Scenario 0: Current Forest Baseline (Business-as-Usual reference)
 # Author: Tijmen Hennekes
 # Evaluates the CURRENT allocation (fm_swe.tif) - NOT an optimisation.
-# Secured framing: targets are attainable only in CN + IFM (MF = production).
 # ==============================================================================
 cat("Initializing baseline evaluation environment...\n")
 library(terra); library(sf); library(prioritizr); library(tibble); library(readxl); library(writexl)
