@@ -1,9 +1,9 @@
 # ==============================================================================
-# Scenario 3: Substitution and the displacement factor (reinforcement vs trade-off)
-#   Carbon is redefined to include HWP substitution: seq_hwp = sink + harvest x DF.
+# Scenario 3: Substitution and the displacement factor.
+# Carbon redefined to include HWP substitution: seq = sink + harvest x DF.
 # Author: Tijmen Hennekes
 # ==============================================================================
-cat("Initializing S3 (substitution DF sweep)...\n")
+cat("Initializing S3 (substitution DF test)...\n")
 library(terra); library(sf); library(gurobi); library(prioritizr)
 library(tibble); library(readxl); library(writexl)
 set.seed(24)
@@ -44,7 +44,7 @@ cl<-1e-6; s_cn[s_cn<cl]<-0; s_ifm[s_ifm<cl]<-0; s_mf[s_mf<cl]<-0
 feat <- prioritizr::zones(s_cn, s_ifm, s_mf, zone_names=zone_names, feature_names=nm)
 tm <- matrix(0,nf,3)
 for(i in 1:nf){ st<-meta$status[i]
-  if(st%in%c("CR","EN","VU")){tm[i,1]<-1.00;tm[i,2]<-0.50} else if(st%in%c("NT","DD")){tm[i,1]<-0.90;tm[i,2]<-0.45} else {tm[i,1]<-0.80;tm[i,2]<-0.40} }
+if(st%in%c("CR","EN","VU")){tm[i,1]<-1.00;tm[i,2]<-0.50} else if(st%in%c("NT","DD")){tm[i,1]<-0.90;tm[i,2]<-0.45} else {tm[i,1]<-0.80;tm[i,2]<-0.40} }
 fw<-rep(1,nf); for(i in 1:nf){st<-meta$status[i]; if(st%in%c("CR","EN","VU"))fw[i]<-10 else if(st%in%c("NT","DD"))fw[i]<-5}
 fwm<-matrix(0,nf,3); fwm[,1]<-fw; fwm[,2]<-fw*0.5
 
@@ -60,17 +60,17 @@ locked_in_matrix <- matrix(FALSE, n_cells, 3); locked_in_matrix[,1] <- terra::va
 locked_in_matrix[is.na(locked_in_matrix)] <- FALSE
 cn_cons <- matrix(0, n_cells, 3); cn_cons[,1] <- 1/n_forest
 
-score <- function(sol_cat){  # secured biodiversity + carbon, given a category solution
+score <- function(sol_cat){  # secured-biodiversity summary for a category solution
   sol <- c(terra::ifel(!is.na(cost_stack[[1]]), terra::ifel(sol_cat==1,1,0), NA),
            terra::ifel(!is.na(cost_stack[[2]]), terra::ifel(sol_cat==2,1,0), NA),
            terra::ifel(!is.na(cost_stack[[3]]), terra::ifel(sol_cat==3,1,0), NA)); names(sol)<-zone_names
-  tc <- as.data.frame(prioritizr::eval_target_coverage_summary(scoring, sol)); tc$zone<-as.character(tc$zone)
-  cn<-tc[tc$zone=="Close_to_Nature",c("feature","absolute_target","absolute_held")]; ifm<-tc[tc$zone=="Integrated",c("feature","absolute_target","absolute_held")]
-  names(cn)<-c("sp","atc","ahc"); names(ifm)<-c("sp","ati","ahi"); rs<-merge(cn,ifm,by="sp")
-  rs$cons<-rs$ahc+rs$ahi; rs$tt<-rs$atc+rs$ati; rs$pct<-ifelse(rs$tt>0,100*rs$cons/rs$tt,NA)
-  list(cov=mean(rs$pct,na.rm=TRUE), unprot=sum(rs$cons<0.01))
+           tc <- as.data.frame(prioritizr::eval_target_coverage_summary(scoring, sol)); tc$zone<-as.character(tc$zone)
+           cn<-tc[tc$zone=="Close_to_Nature",c("feature","absolute_target","absolute_held")]; ifm<-tc[tc$zone=="Integrated",c("feature","absolute_target","absolute_held")]
+           names(cn)<-c("sp","atc","ahc"); names(ifm)<-c("sp","ati","ahi"); rs<-merge(cn,ifm,by="sp")
+           rs$cons<-rs$ahc+rs$ahi; rs$tt<-rs$atc+rs$ati; rs$pct<-ifelse(rs$tt>0,100*rs$cons/rs$tt,NA)
+           list(cov=mean(rs$pct,na.rm=TRUE), unprot=sum(rs$cons<0.01))
 }
-# a dummy scoring problem (biodiversity only) for eval_target_coverage_summary
+# scoring problem (biodiversity only) for eval_target_coverage_summary
 scoring <- prioritizr::problem(cost_stack, feat) %>% prioritizr::add_min_shortfall_objective(budget=solver_budget) %>%
   prioritizr::add_relative_targets(tm) %>% prioritizr::add_feature_weights(fwm)
 
@@ -96,15 +96,15 @@ for (DF in DFs) {
   a<-sum(terra::values(smap)==1,na.rm=TRUE); b<-sum(terra::values(smap)==2,na.rm=TRUE); d<-sum(terra::values(smap)==3,na.rm=TRUE); n<-a+b+d
   bio <- score(smap)
   sink_tot <- (terra::global(terra::mask(sink_cn,terra::ifel(smap==1,1,NA)),"sum",na.rm=TRUE)$sum +
-               terra::global(terra::mask(sink_ifm,terra::ifel(smap==2,1,NA)),"sum",na.rm=TRUE)$sum +
-               terra::global(terra::mask(sink_mf,terra::ifel(smap==3,1,NA)),"sum",na.rm=TRUE)$sum)/1e6
+                 terra::global(terra::mask(sink_ifm,terra::ifel(smap==2,1,NA)),"sum",na.rm=TRUE)$sum +
+                 terra::global(terra::mask(sink_mf,terra::ifel(smap==3,1,NA)),"sum",na.rm=TRUE)$sum)/1e6
   total <- (terra::global(terra::mask(seq_cn,terra::ifel(smap==1,1,NA)),"sum",na.rm=TRUE)$sum +
-            terra::global(terra::mask(seq_ifm,terra::ifel(smap==2,1,NA)),"sum",na.rm=TRUE)$sum +
-            terra::global(terra::mask(seq_mf,terra::ifel(smap==3,1,NA)),"sum",na.rm=TRUE)$sum)/1e6
+              terra::global(terra::mask(seq_ifm,terra::ifel(smap==2,1,NA)),"sum",na.rm=TRUE)$sum +
+              terra::global(terra::mask(seq_mf,terra::ifel(smap==3,1,NA)),"sum",na.rm=TRUE)$sum)/1e6
   sweep <- rbind(sweep, data.frame(DF=DF, feasible=TRUE,
-    CN=round(100*a/n,1), IFM=round(100*b/n,1), MF=round(100*d/n,1),
-    coverage=round(bio$cov,1), unprotected=bio$unprot,
-    sink_Mt=round(sink_tot,2), total_Mt=round(total,2)))
+                                   CN=round(100*a/n,1), IFM=round(100*b/n,1), MF=round(100*d/n,1),
+                                   coverage=round(bio$cov,1), unprotected=bio$unprot,
+                                   sink_Mt=round(sink_tot,2), total_Mt=round(total,2)))
   terra::writeRaster(smap, file.path(out_dir, sprintf("scenario3_DF%02.0f_zones.tif", DF*100)), overwrite=TRUE)
 }
 cat("\n=================  S3 DF SWEEP RESULTS  =================\n")
@@ -112,7 +112,3 @@ cat("(DF = 0, sink only, is scenario S1: infeasible at the 91.0 floor)\n")
 print(sweep, row.names = FALSE)
 writexl::write_xlsx(sweep, file.path(out_dir, "scenario3_DF_sweep.xlsx"))
 cat("\nSaved: scenario3_DF_sweep.xlsx\n")
-
-library(terra)
-m <- terra::rast("C:/Users/Tijme/OneDrive/Msc ERM/Thesis work/00 Prioritizr data/02_processed_data/forest_binary.tif")
-sum(terra::values(m, mat = FALSE) == 1, na.rm = TRUE)
