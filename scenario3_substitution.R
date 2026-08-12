@@ -1,14 +1,6 @@
 # ==============================================================================
 # Scenario 3: Substitution and the displacement factor (reinforcement vs trade-off)
 #   Carbon is redefined to include HWP substitution: seq_hwp = sink + harvest x DF.
-#   Same optimisation as S1 (WTP budget, 30% CN floor, no cap, min-shortfall),
-#   with the 2030 carbon floor (91.0) imposed on the substitution-inclusive layer.
-#   The displacement factor DF is swept over the literature range.
-#   DF = 0 is the sink-only reference (= S1). For each DF we record the allocation,
-#   biodiversity, the LULUCF sink, and the total (sink + substitution).
-#   Purpose: show whether counting substitution REINFORCES the sink/biodiversity
-#   goal or TRADES OFF against it, and how strongly that depends on DF.
-#   NOTE: substitution sits outside LULUCF accounting; this is exploratory.
 # Author: Tijmen Hennekes
 # ==============================================================================
 cat("Initializing S3 (substitution DF sweep)...\n")
