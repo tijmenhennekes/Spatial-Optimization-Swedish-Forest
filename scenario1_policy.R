@@ -1,10 +1,7 @@
 # ==============================================================================
-# Scenario 1: Landscape optimisation at current budget
-#   Biodiversity optimization (min-shortfall) at the WTP budget.
-#   Carbon is UNCONSTRAINED (reported, not forced). The 30% CN floor (EU minimum)
-#   is kept, but the upper cap is removed, so CN may exceed 30%. Shows what
-#   optimisation delivers with current resources. (S2 then adds the carbon target
-#   and finds the budget that meets it.) Replaces the old scenario1_policy.R.
+# Scenario 1: Landscape optimisation at the current (WTP) budget.
+# Biodiversity min-shortfall with a 30% close-to-nature floor.
+# Carbon is reported, not constrained. CN may exceed the 30% floor.
 # Author: Tijmen Hennekes
 # ==============================================================================
 cat("Initializing S1 (landscape optimisation at current budget)...\n")
@@ -90,14 +87,12 @@ n_forest <- sum(terra::values(master_mask, mat = FALSE) == 1, na.rm = TRUE)
 locked_in_matrix      <- matrix(FALSE, nrow = n_cells, ncol = 3)
 locked_in_matrix[, 1] <- terra::values(scherpenhuijzen_aligned, mat = FALSE) == 1
 locked_in_matrix[is.na(locked_in_matrix)] <- FALSE
-constraint_matrix_cn      <- matrix(0, nrow = n_cells, ncol = 3)  # kept only for the optional floor toggle below
+constraint_matrix_cn      <- matrix(0, nrow = n_cells, ncol = 3)
 constraint_matrix_cn[, 1] <- 1 / n_forest
-total_cn_cost  <- terra::global(cost_stack[["Close_to_Nature"]], "sum", na.rm = TRUE)$sum
-# ---- Budget = WTP (current management spend). Carbon UNCONSTRAINED, no 30% CN. ----
+# Budget = WTP (current management spend); carbon unconstrained.
 solver_budget <- current_mgmt_cost
 cat(sprintf("WTP budget: %.1f  |  carbon reference (report only): %.2f Mt\n", solver_budget, carbon_target_Mt))
 # ------------------------- PROBLEM (MIN-SHORTFALL) ----------------------------
-# Pure optimisation at the WTP budget: no carbon floor, no 30% CN requirement.
 policy_problem <- prioritizr::problem(cost_stack, feature_biodiversity) %>%
   prioritizr::add_min_shortfall_objective(budget = solver_budget) %>%
   prioritizr::add_relative_targets(targets_matrix) %>%
