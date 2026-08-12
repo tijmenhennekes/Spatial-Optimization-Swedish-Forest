@@ -1,6 +1,7 @@
 # ==============================================================================
-# Scenario 2: Minimum-feasible policy solution
-#   = S1, but at 1.3x the WTP budget, CN limited to 30% (floor only), and the 2030 LULUCF carbon floor.
+# Scenario 2: Minimum-feasible policy solution.
+# As S1 but at 1.3x the WTP budget, with the 2030 LULUCF carbon floor imposed,
+# so the 30% protection floor and the carbon target are met simultaneously.
 # Author: Tijmen Hennekes
 # ==============================================================================
 cat("Initializing scenario 1b (minimum-feasible) environment...\n")
@@ -53,21 +54,20 @@ names(carbon_constraint_stack) <- zone_names
 fm_rast    <- terra::rast("C:/Users/Tijme/OneDrive/Msc ERM/Thesis work/00 Prioritizr data/01_raw_data/fm_swe.tif")
 fm_aligned <- terra::mask(terra::resample(fm_rast, master_mask, method = "near"), master_mask)
 current_carbon <- terra::ifel(fm_aligned == 1, carbon_cn_stack_raw,
-  terra::ifel(fm_aligned == 2, carbon_ifm_stack_raw,
-              terra::ifel(fm_aligned == 3, carbon_mf_stack_raw, NA)))
+                              terra::ifel(fm_aligned == 2, carbon_ifm_stack_raw,
+                                          terra::ifel(fm_aligned == 3, carbon_mf_stack_raw, NA)))
 current_mgmt_carbon_Mt <- terra::global(current_carbon, "sum", na.rm = TRUE)$sum / 1e6
-# CORRECTED 2030 LULUCF ratio (Annex IIa, internally consistent pair). +3.955 Mt
-# increment over the 2016-2018 baseline => ~+9%. MUST match scenario1_policy.R.
+# Corrected 2030 LULUCF ratio: +3.955 Mt over the 2016-2018 baseline (~+9%).
 carbon_target_Mt <- current_mgmt_carbon_Mt * (47.321 / 43.366)
 cat(sprintf("Current mgmt carbon: %.2f Mt  ->  corrected carbon target: %.2f Mt\n",
             current_mgmt_carbon_Mt, carbon_target_Mt))
 current_cost_map <- terra::ifel(fm_aligned == 1, cost_stack[["Close_to_Nature"]],
-  terra::ifel(fm_aligned == 2, cost_stack[["Integrated"]],
-              terra::ifel(fm_aligned == 3, cost_stack[["Managed_Forest"]], NA)))
+                                terra::ifel(fm_aligned == 2, cost_stack[["Integrated"]],
+                                            terra::ifel(fm_aligned == 3, cost_stack[["Managed_Forest"]], NA)))
 current_mgmt_cost <- terra::global(current_cost_map, "sum", na.rm = TRUE)$sum
 # ------------------------ ZONES / TARGETS / WEIGHTS ---------------------------
 feature_biodiversity <- prioritizr::zones(species_cn_stack, species_ifm_stack, species_mf_stack,
-  zone_names = zone_names, feature_names = explicit_feature_names)
+                                          zone_names = zone_names, feature_names = explicit_feature_names)
 targets_matrix <- matrix(0, nrow = num_features, ncol = 3)
 for (i in 1:num_features) {
   status <- species_metadata$status[i]
@@ -94,13 +94,13 @@ locked_in_matrix[is.na(locked_in_matrix)] <- FALSE
 constraint_matrix_cn      <- matrix(0, nrow = n_cells, ncol = 3)
 constraint_matrix_cn[, 1] <- 1 / n_forest
 total_cn_cost  <- terra::global(cost_stack[["Close_to_Nature"]], "sum", na.rm = TRUE)$sum
-# ---- CHANGE 1: budget = 1.3x current management spend (minimum feasible) ----
+# Budget = 1.3x current management spend (minimum feasible).
 solver_budget   <- 1.3 * current_mgmt_cost
 budget_fraction <- solver_budget / total_cn_cost
 cat(sprintf("Budget = 1.3x WTP: %.1f (%.1f%% of full-CN ceiling)\n", solver_budget, 100*budget_fraction))
 cat(sprintf("Corrected carbon target (Mt): %.2f\n", carbon_target_Mt))
 # ------------------------- PROBLEM (MIN-SHORTFALL) ----------------------------
-# CHANGE 2: CN cap removed. 30% is a FLOOR only (EU minimum); CN may exceed it.
+# 30% is a floor only (EU minimum); CN may exceed it.
 policy_problem <- prioritizr::problem(cost_stack, feature_biodiversity) %>%
   prioritizr::add_min_shortfall_objective(budget = solver_budget) %>%
   prioritizr::add_relative_targets(targets_matrix) %>%
@@ -158,7 +158,7 @@ cat(sprintf("Species with secured habitat (CN+IFM > 0):  %d / %d\n", sum(rep_spe
 cat(sprintf("Effectively unprotected (<1%% secured):      %d\n", sum(rep_species$conservation_held < 0.01)))
 if (sum(rep_species$conservation_held < 0.01) > 0) print(table(rep_species$status[rep_species$conservation_held < 0.01]))
 rep_species$tier <- ifelse(rep_species$status %in% c("CR","EN","VU"), "1 CR/EN/VU",
-                    ifelse(rep_species$status %in% c("NT","DD"),      "2 NT/DD", "3 LC/other"))
+                           ifelse(rep_species$status %in% c("NT","DD"),      "2 NT/DD", "3 LC/other"))
 rep_species$tier <- factor(rep_species$tier, levels = c("1 CR/EN/VU","2 NT/DD","3 LC/other"))
 tier_tbl <- do.call(rbind, lapply(levels(rep_species$tier), function(t) {
   s <- rep_species[rep_species$tier == t, ]
