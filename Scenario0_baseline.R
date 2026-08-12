@@ -2,6 +2,7 @@
 # Scenario 0: Current Forest Baseline (Business-as-Usual reference)
 # Author: Tijmen Hennekes
 # Evaluates the CURRENT allocation (fm_swe.tif) - NOT an optimisation.
+# Secured framing: targets are attainable only in CN + IFM (MF = production).
 # ==============================================================================
 cat("Initializing baseline evaluation environment...\n")
 library(terra); library(sf); library(prioritizr); library(tibble); library(readxl); library(writexl)
@@ -15,12 +16,14 @@ cost_stack <- c(
   terra::rast("C:/Users/Tijme/OneDrive/Msc ERM/Thesis work/00 Prioritizr data/02_processed_data/cost_mf.tif")
 )
 names(cost_stack) <- zone_names
-# Opportunity cost is EUR/ha/yr; x cell area -> EUR/cell in EUR million. Uniform rescale.
+# Opportuntiy cost is EUR/ha/yr; x cell area -> EUR million per cell.
 cost_stack <- cost_stack * terra::cellSize(cost_stack[[1]], unit = "ha") / 1e6
 ifm_cost_factor <- 0.25
+
 cost_stack[["Integrated"]] <- ifm_cost_factor * cost_stack[["Close_to_Nature"]]
 carbon_rast <- terra::rast("C:/Users/Tijme/OneDrive/Msc ERM/Thesis work/00 Prioritizr data/02_processed_data/carbon_inverse_adjusted.tif")
 names(carbon_rast) <- zone_names
+
 fm_rast    <- terra::rast("C:/Users/Tijme/OneDrive/Msc ERM/Thesis work/00 Prioritizr data/01_raw_data/fm_swe.tif")
 fm_aligned <- terra::mask(terra::resample(fm_rast, master_mask, method = "near"), master_mask)
 cat("Processing species layers...\n")
@@ -60,12 +63,14 @@ for (i in 1:num_features) {
   else if (status %in% c("NT", "DD"))  { targets_matrix[i, 1] <- 0.90; targets_matrix[i, 2] <- 0.45 }
   else                                  { targets_matrix[i, 1] <- 0.80; targets_matrix[i, 2] <- 0.40 }
 }
+
 feature_weights <- rep(1, num_features)
 for (i in 1:num_features) {
   status <- species_metadata$status[i]
   if      (status %in% c("CR", "EN", "VU")) feature_weights[i] <- 10
   else if (status %in% c("NT", "DD"))       feature_weights[i] <- 5
 }
+
 feature_weights_matrix      <- matrix(0, nrow = num_features, ncol = 3)
 feature_weights_matrix[, 1] <- feature_weights
 feature_weights_matrix[, 2] <- feature_weights * 0.5
@@ -142,7 +147,7 @@ c_cn  <- terra::global(terra::mask(carbon_cn_stack_raw,  terra::ifel(fm_aligned 
 c_ifm <- terra::global(terra::mask(carbon_ifm_stack_raw, terra::ifel(fm_aligned == 2, 1, NA)), "sum", na.rm = TRUE)$sum
 c_mf  <- terra::global(terra::mask(carbon_mf_stack_raw,  terra::ifel(fm_aligned == 3, 1, NA)), "sum", na.rm = TRUE)$sum
 c_tot <- (c_cn + c_ifm + c_mf) / 1e6
-carbon_ref_2030_Mt <- c_tot * (47.3 / 46.2)
+carbon_ref_2030_Mt <- c_tot * (47.321 / 43.366)   # corrected LULUCF ratio (+9%)
 cat(sprintf("CN: %.2f  IFM: %.2f  MF: %.2f  Total: %.2f Mt\n", c_cn/1e6, c_ifm/1e6, c_mf/1e6, c_tot))
 cat(sprintf("Relative 2030 reference: %.2f Mt\n", carbon_ref_2030_Mt))
 cat(sprintf("S0 vs 2030 reference: %.1f%%\n", 100 * c_tot / carbon_ref_2030_Mt))
