@@ -20,7 +20,7 @@ integrated, and managed forest) using multi-zone integer linear programming with
 | `sensitivity1_budget.R` | Budget sensitivity (Table 8) |
 | `sensitivity2_fmcost.R` | IFM-cost sensitivity (Table 9) |
 | `sensitivity3_mfweight.R` | MF-weight sensitivity (Table 10) |
-| `transition_intensity_geotiff.R` | Transition map between S0 and S1 (Section 4.3) |
+| `transition_intensity_geotiff.R` | Transition map between S0 and S2 (Section 4.3) |
 
 
 Requires R with `prioritizr`, `terra`, `sf`, `gurobi`, `tibble`, `readxl`, and `writexl`,
